@@ -5,6 +5,7 @@ import java.awt.event.KeyEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Random;
 
 public class GamePanel extends JPanel {
@@ -73,6 +74,16 @@ public class GamePanel extends JPanel {
                 if (animator.isRunning()) animator.stop();
                 else animator.restart();
         }
+        if (e.getKeyCode() == KeyEvent.VK_R)
+            if (isGameOver) {
+                snakeBody.removeAll(Collections.unmodifiableList(snakeBody));
+                food = new Tile(random.nextInt(MainFrame.SIZE / tileSize), random.nextInt(MainFrame.SIZE / tileSize));
+                snakeHead = new Tile(random.nextInt(MainFrame.SIZE / tileSize), random.nextInt(MainFrame.SIZE / tileSize));
+                snakeBody.add(snakeHead);
+                isDown = isTop = isLeft = isRight = isGameOver = false;
+                xSpeed = ySpeed = 0;
+                repaint();
+            }
     }
 
     public boolean hasCollided(Tile tile1, Tile tile2) {
@@ -84,14 +95,14 @@ public class GamePanel extends JPanel {
     }
 
     public void gameOver() {
-        for (int i = 4; i < snakeBody.size(); i++) {
-            if (hasCollided(snakeHead, snakeBody.get(i))) {
-                isGameOver = true;
-                isDown = isTop = isLeft = isRight = false;
-                animator.stop();
-                break;
-            }
-        }
+        if (snakeBody.size() > 3)
+            for (int i = 4; i < snakeBody.size(); i++)
+                if (hasCollided(snakeHead, snakeBody.get(i))) {
+                    isGameOver = true;
+                    isDown = isTop = isLeft = isRight = false;
+                    animator.stop();
+                    break;
+                }
     }
 
     public void move() {
@@ -145,27 +156,28 @@ public class GamePanel extends JPanel {
     }
 
     private void drawEye(Graphics2D g2) {
-        if (isRight) {
-            eye = new Ellipse2D.Float(snakeBody.get(0).x + 15, snakeHead.y + 5, 5, 5);
-            g2.fill(eye);
-            eye = new Ellipse2D.Float(snakeBody.get(0).x + 15, snakeHead.y + 15, 5, 5);
-            g2.fill(eye);
-        } else if (isLeft) {
-            eye = new Ellipse2D.Float(snakeBody.get(0).x + 5, snakeHead.y + 5, 5, 5);
-            g2.fill(eye);
-            eye = new Ellipse2D.Float(snakeBody.get(0).x + 5, snakeHead.y + 15, 5, 5);
-            g2.fill(eye);
-        } else if (isTop) {
-            eye = new Ellipse2D.Float(snakeBody.get(0).x + 5, snakeHead.y + 5, 5, 5);
-            g2.fill(eye);
-            eye = new Ellipse2D.Float(snakeBody.get(0).x + 15, snakeHead.y + 5, 5, 5);
-            g2.fill(eye);
-        } else if (isDown) {
-            eye = new Ellipse2D.Float(snakeBody.get(0).x + 5, snakeHead.y + 15, 5, 5);
-            g2.fill(eye);
-            eye = new Ellipse2D.Float(snakeBody.get(0).x + 15, snakeHead.y + 15, 5, 5);
-            g2.fill(eye);
-        }
+        if (!isGameOver)
+            if (isRight) {
+                eye = new Ellipse2D.Float(snakeBody.getFirst().x + 15, snakeHead.y + 5, 5, 5);
+                g2.fill(eye);
+                eye = new Ellipse2D.Float(snakeBody.getFirst().x + 15, snakeHead.y + 15, 5, 5);
+                g2.fill(eye);
+            } else if (isLeft) {
+                eye = new Ellipse2D.Float(snakeBody.getFirst().x + 5, snakeHead.y + 5, 5, 5);
+                g2.fill(eye);
+                eye = new Ellipse2D.Float(snakeBody.getFirst().x + 5, snakeHead.y + 15, 5, 5);
+                g2.fill(eye);
+            } else if (isTop) {
+                eye = new Ellipse2D.Float(snakeBody.getFirst().x + 5, snakeHead.y + 5, 5, 5);
+                g2.fill(eye);
+                eye = new Ellipse2D.Float(snakeBody.getFirst().x + 15, snakeHead.y + 5, 5, 5);
+                g2.fill(eye);
+            } else if (isDown) {
+                eye = new Ellipse2D.Float(snakeBody.getFirst().x + 5, snakeHead.y + 15, 5, 5);
+                g2.fill(eye);
+                eye = new Ellipse2D.Float(snakeBody.getFirst().x + 15, snakeHead.y + 15, 5, 5);
+                g2.fill(eye);
+            }
     }
 
     @Override
@@ -181,12 +193,10 @@ public class GamePanel extends JPanel {
         //draw snake body
         for (Tile tile : snakeBody) {
             Rectangle2D.Float snakePart = new Rectangle2D.Float(tile.x, tile.y, tileSize, tileSize);
-            g2.setColor(Color.orange);
-            g2.setStroke(new BasicStroke(3, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 20));
-            g2.draw(snakePart);
             g2.setColor(Color.green);
-            g2.setStroke(new BasicStroke(1));
             g2.fill(snakePart);
+            g2.setColor(Color.orange);
+            g2.draw(snakePart);
         }
         //draw snake eyes
         g2.setColor(Color.BLUE.brighter());
@@ -196,9 +206,19 @@ public class GamePanel extends JPanel {
         g2.setFont(new Font("Bell MT", Font.PLAIN, 18));
         g2.setColor(Color.WHITE);
         g2.drawString("Score: " + (snakeBody.size() - 1) * 3, 15, 20);
+
+        //draw game over
+        g2.setFont(new Font("Bradley Hand ITC", Font.BOLD | Font.ITALIC, 80));
+        g2.setColor(new Color(0x6A0086));
+        if (isGameOver)
+            g2.drawString(
+                    "Game Over",
+                    MainFrame.SIZE / 2 - g2.getFontMetrics().stringWidth("Game Over") / 2,
+                    MainFrame.SIZE / 2 + g2.getFontMetrics().getHeight() / 3
+            );
     }
 
-    private class Tile {
+    public class Tile {
         int x, y;
 
         public Tile(int x, int y) {
